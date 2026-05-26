@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FinMind — AI Finance Advisor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="FinMind.css"/>
+
+</head>
+<body>
+
+<!-- ── AUTH ── -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <h1>FinMind</h1>
+    <p>Your AI-powered personal finance advisor</p>
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchTab('login')">Sign In</button>
+      <button class="tab-btn" onclick="switchTab('register')">Register</button>
+    </div>
+    <div id="login-form">
+      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com"/></div>
+      <div class="field"><label>Password</label><input type="password" id="login-pass" placeholder="••••••••"/></div>
+      <button class="btn-primary" onclick="doLogin()">Sign In</button>
+    </div>
+    <div id="register-form" style="display:none">
+      <div class="field"><label>Full Name</label><input type="text" id="reg-name" placeholder="Your Name"/></div>
+      <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="you@example.com"/></div>
+      <div class="field"><label>Password</label><input type="password" id="reg-pass" placeholder="Min 6 characters"/></div>
+      <button class="btn-primary" onclick="doRegister()">Create Account</button>
+    </div>
+    <p class="auth-msg" id="auth-msg"></p>
+  </div>
+</div>
+
+<!-- ── INCOME SETUP OVERLAY ── -->
+<div id="income-setup">
+  <div class="setup-card">
+    <span class="step-tag" id="setup-tag">GETTING STARTED</span>
+    <h2 id="setup-title">What's your monthly income?</h2>
+    <p class="sub" id="setup-sub">This is the foundation of your budget. FinMind will use this to track how much you've spent and how much you have left each month.</p>
+    <div class="income-input-wrap">
+      <span class="income-currency-tag" id="setup-cur-tag">UGX</span>
+      <input type="number" id="setup-income-val" placeholder="e.g. 2,500,000" min="1" step="1"/>
+    </div>
+    <p class="setup-err" id="setup-err"></p>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:12px;text-align:left">Income source (optional)</p>
+    <div class="income-sources">
+      <div class="src-chip" onclick="toggleSrc(this)">💼 Salary</div>
+      <div class="src-chip" onclick="toggleSrc(this)">💻 Freelance</div>
+      <div class="src-chip" onclick="toggleSrc(this)">🏪 Business</div>
+      <div class="src-chip" onclick="toggleSrc(this)">📈 Investments</div>
+      <div class="src-chip" onclick="toggleSrc(this)">🎓 Stipend</div>
+      <div class="src-chip" onclick="toggleSrc(this)">🤝 Side Hustle</div>
+    </div>
+    <button class="btn-setup" onclick="saveIncome()">Set My Monthly Income →</button>
+    <button class="btn-skip" id="setup-skip-btn" onclick="skipIncome()">Skip for now</button>
+  </div>
+</div>
+
+<!-- ── CURRENCY MODAL ── -->
+<div class="modal-overlay" id="currency-modal">
+  <div class="modal">
+    <div class="modal-head"><h2>Choose Your Currency</h2><p>All amounts across the app will update instantly</p></div>
+    <div class="modal-search"><input type="text" id="currency-search" placeholder="Search currency or country..." oninput="filterCurrencies()"/></div>
+    <div class="currency-list" id="currency-list"></div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeCurrencyModal()">Cancel</button>
+      <button class="btn-save" onclick="saveCurrency()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="app">
+  <header>
+    <div class="logo">FinMind</div>
+    <nav class="nav">
+      <button class="nav-btn active" onclick="showPage('dashboard',this)">Dashboard</button>
+      <button class="nav-btn" onclick="showPage('transactions',this)">Transactions</button>
+      <button class="nav-btn" onclick="showPage('budget',this)">Budget</button>
+      <button class="nav-btn" onclick="showPage('ai',this)">AI Advisor</button>
+    </nav>
+    <div class="header-right">
+      <div class="currency-badge" onclick="openCurrencyModal()" title="Change currency">
+        <span class="sym" id="header-currency-sym">UGX</span>
+        <span style="font-size:11px">▾</span>
+      </div>
+      <div class="user-pill">
+        <div class="avatar" id="user-avatar">?</div>
+        <span class="user-name" id="user-display">User</span>
+        <button id="logout-btn" onclick="doLogout()">Sign out</button>
+      </div>
+    </div>
+  </header>
+  <main>
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Overview</div>
+      <div class="page-sub" id="dash-greeting">Welcome back!</div>
+
+      <!-- Income banner -->
+      <div id="income-banner-set" class="income-banner" style="display:none">
+        <div class="income-banner-left">
+          <div class="income-icon">💰</div>
+          <div>
+            <div class="income-label">Monthly Income</div>
+            <div class="income-value" id="banner-income-val">—</div>
+            <div class="income-source-tag" id="banner-income-src"></div>
+          </div>
+        </div>
+        <div class="income-banner-right">
+          <div class="income-remaining">
+            <div class="income-remaining-label">Remaining this month</div>
+            <div class="income-remaining-val ok" id="banner-remaining">—</div>
+          </div>
+          <button class="edit-income-btn" onclick="openEditIncome()">✏️ Edit Income</button>
+        </div>
+      </div>
+      <div id="income-banner-missing" class="no-income-banner" style="display:none">
+        <p>💡 Set your monthly income to get personalized budgeting advice</p>
+        <button onclick="openEditIncome()">Set Income</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Balance</div>
+          <div class="stat-value green" id="stat-balance">—</div>
+          <div class="stat-change">Income − Expenses</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Expenses</div>
+          <div class="stat-value red" id="stat-expense">—</div>
+          <div class="stat-change" id="stat-expense-count">0 transactions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Savings Rate</div>
+          <div class="stat-value yellow" id="stat-savings">0%</div>
+          <div class="stat-change">Of monthly income</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Transactions</div>
+          <div class="stat-value" id="stat-txn-count">0</div>
+          <div class="stat-change">Total recorded</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Spending by Category</div>
+          <div class="bar-chart" id="category-bars"><div class="empty-state">No expense data yet</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Recent Transactions</div>
+          <div class="txn-list" id="recent-list"><div class="empty-state">No transactions yet</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div class="page" id="page-transactions">
+      <div class="page-title">Transactions</div>
+      <div class="page-sub">Record your expenses (your income is set separately)</div>
+      <div class="txn-form-card">
+        <div class="form-row">
+          <div class="form-group"><label>Description</label><input type="text" id="txn-desc" placeholder="e.g. Grocery shopping"/></div>
+          <div class="form-group"><label>Amount (<span class="cur-label">UGX</span>)</label><input type="number" id="txn-amount" placeholder="0" min="0" step="1"/></div>
+          <div class="form-group"><label>Category</label>
+            <select id="txn-cat">
+              <option>Food</option><option>Transport</option><option>Housing</option>
+              <option>Health</option><option>Entertainment</option><option>Shopping</option>
+              <option>Education</option><option>Utilities</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Type</label>
+            <select id="txn-type"><option value="expense">Expense</option><option value="income">Other Income</option></select>
+          </div>
+          <button class="btn-add" onclick="addTransaction()">+ Add</button>
+        </div>
+      </div>
+      <div class="filter-row">
+        <span style="font-size:12px;color:var(--text3);">Filter:</span>
+        <div class="filter-chip active" onclick="filterTxns('all',this)">All</div>
+        <div class="filter-chip" onclick="filterTxns('income',this)">Other Income</div>
+        <div class="filter-chip" onclick="filterTxns('expense',this)">Expenses</div>
+      </div>
+      <div class="card">
+        <table class="txn-table">
+          <thead><tr><th>Description</th><th>Category</th><th>Type</th><th>Amount</th><th>Date</th><th></th></tr></thead>
+          <tbody id="txn-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:32px">No transactions yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BUDGET -->
+    <div class="page" id="page-budget">
+      <div class="page-title">Budget Goals</div>
+      <div class="page-sub">Set monthly spending limits per category</div>
+      <div class="card" style="margin-bottom:24px;max-width:500px">
+        <div class="card-title">Set Budget Limit</div>
+        <div style="display:flex;gap:10px;align-items:flex-end">
+          <div class="form-group" style="flex:1"><label>Category</label>
+            <select id="budget-cat">
+              <option>Food</option><option>Transport</option><option>Housing</option>
+              <option>Health</option><option>Entertainment</option><option>Shopping</option>
+              <option>Education</option><option>Utilities</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1"><label>Monthly Limit (<span class="cur-label">UGX</span>)</label>
+            <input type="number" id="budget-limit" placeholder="e.g. 500000" min="1"/>
+          </div>
+          <button class="btn-add" onclick="setBudget()">Set</button>
+        </div>
+      </div>
+      <div class="budget-grid" id="budget-grid">
+        <div style="color:var(--text3);font-size:13px;grid-column:1/-1">No budgets set yet.</div>
+      </div>
+    </div>
+
+    <!-- AI -->
+    <div class="page" id="page-ai">
+      <div class="page-title">AI Advisor</div>
+      <div class="page-sub">Personalized financial advice powered by Claude AI</div>
+      <div class="chat-layout">
+        <div class="chat-main">
+          <div class="chat-messages" id="chat-messages">
+            <div class="msg ai">
+              <div class="msg-bubble">👋 Hi! I'm your FinMind AI Advisor. I have access to your real financial data — your income, expenses, savings rate, and budget status — and I'll give you advice based on your actual numbers. Ask me anything!</div>
+              <div class="msg-time">Now</div>
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <input type="text" id="chat-input" placeholder="Ask your AI advisor..." onkeydown="if(event.key==='Enter')sendChat()"/>
+            <button class="send-btn" id="send-btn" onclick="sendChat()">Send</button>
+          </div>
+        </div>
+        <div class="chat-sidebar">
+          <div class="card" style="padding:16px">
+            <div class="card-title" style="margin-bottom:12px">Quick Questions</div>
+            <div class="quick-btns">
+              <button class="quick-btn" onclick="askQuick(this)">How is my spending this month?</button>
+              <button class="quick-btn" onclick="askQuick(this)">Where am I overspending?</button>
+              <button class="quick-btn" onclick="askQuick(this)">Give me tips to save more</button>
+              <button class="quick-btn" onclick="askQuick(this)">Am I on track with my budgets?</button>
+              <button class="quick-btn" onclick="askQuick(this)">What's my financial health score?</button>
+              <button class="quick-btn" onclick="askQuick(this)">How much should I be saving?</button>
+            </div>
+          </div>
+          <div class="card" style="padding:16px">
+            <div class="card-title" style="margin-bottom:8px;font-size:13px">Your Summary</div>
+            <div id="ai-summary" style="font-size:12px;color:var(--text2);line-height:1.8">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="FinMind.js"></script>
+</body>
+</html>
