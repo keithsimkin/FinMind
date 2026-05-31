@@ -115,12 +115,18 @@ function openEditIncome(){openIncomeSetup(true);}
 async function saveIncome(){
   const val=parseFloat(document.getElementById('setup-income-val').value);
   if(!val||val<=0){document.getElementById('setup-err').textContent='Please enter a valid income amount.';return;}
-  const profile=getProfile();
-  profile.income=val;
-  profile.incomeSource=selectedSource||profile.incomeSource||'';
-  await saveProfile(profile);
-  document.getElementById('income-setup').classList.remove('open');
-  refreshAll();
+  
+  try {
+    const profile=getProfile();
+    profile.income=val;
+    profile.incomeSource=selectedSource||profile.incomeSource||'';
+    await saveProfile(profile);
+    document.getElementById('income-setup').classList.remove('open');
+    refreshAll();
+  } catch(e) {
+    console.error('Error saving income:', e);
+    document.getElementById('setup-err').textContent='Error saving income: ' + e.message;
+  }
 }
 
 function skipIncome(){
@@ -253,6 +259,9 @@ async function loadUserData(){
 
 function getProfile(){return userDataCache.profile;}
 async function saveProfile(p){
+  if(!currentUser){
+    throw new Error('You must be logged in to save your profile');
+  }
   userDataCache.profile=p;
   await DB.saveProfile(currentUser.uid,p);
 }

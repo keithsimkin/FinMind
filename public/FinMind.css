@@ -203,3 +203,471 @@ main{flex:1;padding:32px;max-width:1200px;margin:0 auto;width:100%;}
 .typing-dot:nth-child(2){animation-delay:.2s;}
 .typing-dot:nth-child(3){animation-delay:.4s;}
 @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 768px) {
+  /* Auth Screen */
+  .auth-card {
+    width: 90%;
+    max-width: 380px;
+    padding: 32px 24px;
+  }
+  .auth-card h1 {
+    font-size: 26px;
+  }
+
+  /* Income Setup */
+  .setup-card {
+    width: 90%;
+    max-width: 400px;
+    padding: 32px 24px;
+  }
+  .setup-card h2 {
+    font-size: 22px;
+  }
+  .income-sources {
+    gap: 6px;
+  }
+  .src-chip {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+
+  /* Header */
+  header {
+    padding: 0 16px;
+    height: auto;
+    min-height: 60px;
+    flex-wrap: wrap;
+  }
+  .logo {
+    font-size: 18px;
+  }
+  .nav {
+    order: 3;
+    width: 100%;
+    justify-content: space-around;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+    gap: 2px;
+  }
+  .nav-btn {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+  .header-right {
+    gap: 8px;
+  }
+  .currency-badge {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+  .currency-badge .sym {
+    font-size: 13px;
+  }
+  .user-pill {
+    padding: 5px 10px 5px 8px;
+  }
+  .avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+  .user-name {
+    font-size: 12px;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #logout-btn {
+    font-size: 11px;
+  }
+
+  /* Main Content */
+  main {
+    padding: 16px;
+  }
+  .page-title {
+    font-size: 22px;
+  }
+  .page-sub {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  /* Income Banner */
+  .income-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 12px;
+  }
+  .income-banner-left {
+    width: 100%;
+  }
+  .income-banner-right {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .income-remaining {
+    text-align: left;
+  }
+  .edit-income-btn {
+    width: 100%;
+  }
+  .no-income-banner {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  .no-income-banner button {
+    width: 100%;
+  }
+
+  /* Stats Grid */
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    padding: 16px;
+  }
+  .stat-value {
+    font-size: 20px;
+  }
+
+  /* Two Column Layout */
+  .two-col {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Cards */
+  .card {
+    padding: 16px;
+  }
+  .card-title {
+    font-size: 14px;
+    margin-bottom: 14px;
+  }
+
+  /* Bar Chart */
+  .bar-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .bar-row .label {
+    width: 100%;
+    text-align: left;
+    font-size: 11px;
+  }
+  .bar-track {
+    order: 3;
+    width: 100%;
+  }
+  .bar-row .amt {
+    width: auto;
+    text-align: right;
+    font-size: 11px;
+  }
+
+  /* Transaction List */
+  .txn-item {
+    padding: 10px;
+    gap: 10px;
+  }
+  .txn-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  .txn-name {
+    font-size: 12px;
+  }
+  .txn-date {
+    font-size: 10px;
+  }
+  .txn-amount {
+    font-size: 13px;
+  }
+
+  /* Transaction Form */
+  .txn-form-card {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .btn-add {
+    width: 100%;
+    padding: 12px;
+  }
+
+  /* Transaction Table */
+  .txn-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .txn-table thead {
+    display: none;
+  }
+  .txn-table tbody {
+    display: block;
+  }
+  .txn-table tr {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+    background: var(--bg3);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    border-bottom: none !important;
+  }
+  .txn-table td {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border: none !important;
+  }
+  .txn-table td:before {
+    content: attr(data-label);
+    font-weight: 500;
+    color: var(--text3);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Budget Grid */
+  .budget-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .budget-card {
+    padding: 16px;
+  }
+
+  /* Budget Form */
+  .page-budget .card {
+    max-width: 100%;
+  }
+  .page-budget .card > div {
+    flex-direction: column;
+  }
+  .page-budget .card .btn-add {
+    width: 100%;
+  }
+
+  /* AI Chat */
+  .chat-layout {
+    grid-template-columns: 1fr;
+    height: calc(100vh - 180px);
+    gap: 16px;
+  }
+  .chat-main {
+    min-height: 400px;
+  }
+  .chat-messages {
+    padding: 16px;
+    gap: 12px;
+  }
+  .msg {
+    max-width: 90%;
+  }
+  .msg-bubble {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  .chat-input-row {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+  .chat-input-row input {
+    font-size: 13px;
+    padding: 9px 12px;
+  }
+  .send-btn {
+    padding: 9px 16px;
+    font-size: 12px;
+  }
+  .chat-sidebar {
+    order: -1;
+  }
+  .quick-btn {
+    font-size: 11px;
+    padding: 9px 10px;
+  }
+
+  /* Modals */
+  .modal {
+    width: 90%;
+    max-width: 400px;
+    max-height: 85vh;
+  }
+  .modal-head {
+    padding: 18px 20px 14px;
+  }
+  .modal-head h2 {
+    font-size: 16px;
+  }
+  .modal-head p {
+    font-size: 12px;
+  }
+  .currency-opt {
+    padding: 10px 12px;
+  }
+  .c-sym {
+    width: 36px;
+    font-size: 14px;
+  }
+  .c-code {
+    font-size: 12px;
+  }
+  .c-name {
+    font-size: 11px;
+  }
+  .modal-foot {
+    padding: 14px 16px;
+    flex-direction: column;
+  }
+  .btn-cancel, .btn-save {
+    width: 100%;
+    padding: 10px;
+  }
+
+  /* Filter Row */
+  .filter-row {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .filter-chip {
+    font-size: 11px;
+    padding: 5px 12px;
+  }
+
+  /* Form Groups */
+  .form-group label {
+    font-size: 11px;
+  }
+  .form-group input,
+  .form-group select {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+}
+
+/* ── SMALL MOBILE (< 480px) ── */
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 24px 20px;
+  }
+  .setup-card {
+    padding: 24px 20px;
+  }
+  .income-sources {
+    justify-content: flex-start;
+  }
+  .src-chip {
+    font-size: 10px;
+    padding: 5px 10px;
+  }
+  
+  header {
+    padding: 0 12px;
+  }
+  .logo {
+    font-size: 16px;
+  }
+  .nav-btn {
+    font-size: 10px;
+    padding: 5px 8px;
+  }
+  .user-name {
+    display: none;
+  }
+  
+  main {
+    padding: 12px;
+  }
+  .page-title {
+    font-size: 20px;
+  }
+  .page-sub {
+    font-size: 12px;
+  }
+  
+  .income-banner {
+    padding: 12px;
+  }
+  .income-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+  .income-value {
+    font-size: 18px;
+  }
+  .income-remaining-val {
+    font-size: 16px;
+  }
+  
+  .stat-card {
+    padding: 14px;
+  }
+  .stat-label {
+    font-size: 11px;
+  }
+  .stat-value {
+    font-size: 18px;
+  }
+  .stat-change {
+    font-size: 11px;
+  }
+  
+  .card {
+    padding: 14px;
+  }
+  
+  .chat-messages {
+    padding: 12px;
+  }
+  .msg {
+    max-width: 95%;
+  }
+}
+
+/* ── LANDSCAPE MOBILE ── */
+@media (max-width: 768px) and (orientation: landscape) {
+  .chat-layout {
+    height: calc(100vh - 140px);
+  }
+  .chat-main {
+    min-height: 300px;
+  }
+}
+
+/* ── TABLET (769px - 1024px) ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  main {
+    padding: 24px;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .budget-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .two-col {
+    grid-template-columns: 1fr;
+  }
+  .chat-layout {
+    grid-template-columns: 1fr 240px;
+  }
+}
