@@ -1,54 +1,146 @@
-# FinMind - AI Finance Advisor
+# FinMind - AI-Powered Personal Finance Advisor
 
-A personal finance tracking app with AI-powered advice using NVIDIA Nemotron AI via OpenRouter.
+A modern, intelligent personal finance management app with AI-powered advice, built with vanilla JavaScript and Firebase.
 
-## Setup Instructions
+## ✨ Features
 
-### 1. Get an API Key
-1. Go to [OpenRouter](https://openrouter.ai/)
-2. Sign up or log in
-3. Navigate to the "Keys" section
-4. Create a new API key
-5. Copy the key (starts with `sk-or-v1-`)
+- 💰 **Income & Expense Tracking** - Record and categorize all your transactions
+- 📊 **Visual Analytics** - Beautiful charts and insights into your spending habits
+- 🎯 **Budget Management** - Set spending limits per category and track progress
+- 🤖 **AI Financial Advisor** - Get personalized advice powered by NVIDIA Nemotron AI
+- 🌍 **Multi-Currency Support** - 38+ currencies from around the world
+- 🔐 **Secure Authentication** - Firebase Authentication for secure user accounts
+- ☁️ **Cloud Sync** - Your data syncs across all devices automatically
+- 📱 **Responsive Design** - Works perfectly on desktop, tablet, and mobile
 
-### 2. Configure the API Key
-1. Open `config.js` in the project folder
-2. Replace `YOUR_OPENROUTER_API_KEY_HERE` with your actual API key:
-   ```javascript
-   const CONFIG = {
-     OPENROUTER_API_KEY: 'sk-or-v1-your-actual-key-here'
-   };
-   ```
-3. Save the file
+## 🚀 Quick Start
 
-### 3. Run the App
-Simply open `FinMind.html` in your web browser!
+### 1. Clone the Repository
 
-## Features
-- 💰 Track income and expenses
-- 📊 Visual spending analytics by category
-- 🎯 Set budget goals
-- 💱 Multi-currency support (40+ currencies)
-- 🤖 AI financial advisor with personalized advice
-- 📱 Clean, modern UI with dark theme
+```bash
+git clone https://github.com/yourusername/finmind.git
+cd finmind
+```
 
-## Security Notes
-- **Never commit `config.js` to GitHub** (it's already in `.gitignore`)
-- The API key is visible in browser dev tools - this is a limitation of client-side apps
-- For production apps, use a backend server to hide API keys
+### 2. Set Up Firebase
 
-## AI Features
-The AI advisor:
-- Keeps responses short (max 3 sentences)
-- Only discusses finance topics
-- Uses your actual financial data for personalized advice
-- Rejects off-topic questions automatically
+Follow the detailed instructions in [FIREBASE_SETUP.md](FIREBASE_SETUP.md) to:
+- Create a Firebase project
+- Enable Authentication (Email/Password)
+- Enable Realtime Database
+- Configure your app credentials
 
-## Tech Stack
-- Pure HTML, CSS, JavaScript (no frameworks)
-- LocalStorage for data persistence
-- OpenRouter API for AI chat
-- NVIDIA Nemotron AI model
+### 3. Configure API Keys
 
-## License
-MIT License - Feel free to use and modify!
+1. **Firebase**: Update `firebase-config.js` with your Firebase credentials
+2. **OpenRouter AI**: Update `config.js` with your OpenRouter API key
+   - Get your key from [OpenRouter](https://openrouter.ai/keys)
+
+### 4. Open the App
+
+Simply open `FinMind.html` in your web browser. No build process required!
+
+## 🔧 Configuration Files
+
+### firebase-config.js
+```javascript
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+```
+
+### config.js
+```javascript
+const CONFIG = {
+  OPENROUTER_API_KEY: 'your-openrouter-api-key-here'
+};
+```
+
+## 📊 Data Structure
+
+Your data is organized in Firebase Realtime Database:
+
+```
+users/
+  └── {userId}/
+      ├── profile/
+      │   ├── name
+      │   ├── email
+      │   ├── income
+      │   └── incomeSource
+      ├── transactions/
+      │   └── [array of transaction objects]
+      ├── budgets/
+      │   └── {category: limit}
+      └── currency/
+          ├── code
+          ├── symbol
+          ├── name
+          └── flag
+```
+
+## 🎨 Tech Stack
+
+- **Frontend**: Vanilla JavaScript, HTML5, CSS3
+- **Backend**: Firebase (Authentication + Realtime Database)
+- **AI**: OpenRouter API with NVIDIA Nemotron model
+- **Fonts**: DM Sans & DM Serif Display (Google Fonts)
+
+## 🔒 Security
+
+- User authentication via Firebase Auth
+- Database security rules ensure users can only access their own data
+- API keys should be kept private (use environment variables in production)
+- Never commit `firebase-config.js` or `config.js` with real credentials to public repos
+
+## 📱 Browser Support
+
+- Chrome (recommended)
+- Firefox
+- Safari
+- Edge
+- Opera
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## 🆘 Support
+
+If you encounter any issues:
+1. Check [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for setup instructions
+2. Verify your Firebase configuration
+3. Check browser console for error messages
+4. Open an issue on GitHub
+
+## 🎯 Roadmap
+
+- [ ] Export data to CSV/PDF
+- [ ] Recurring transactions
+- [ ] Bill reminders
+- [ ] Investment tracking
+- [ ] Multi-user households
+- [ ] Mobile app (React Native)
+- [ ] Dark mode improvements
+- [ ] Data visualization enhancements
+
+## 👨‍💻 Author
+
+Built with ❤️ by [Your Name]
+
+## 🙏 Acknowledgments
+
+- Firebase for backend infrastructure
+- OpenRouter for AI API access
+- NVIDIA for the Nemotron AI model
+- Google Fonts for typography

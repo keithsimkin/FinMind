@@ -67,25 +67,15 @@ function selectCurrency(code){
     el.classList.toggle('selected',el.querySelector('.c-code').textContent.trim().startsWith(code));
   });
 }
-function saveCurrency(){
+async function saveCurrency(){
   if(!pendingCurrency)return;
   activeCurrency=pendingCurrency;
-  if(currentUser)localStorage.setItem('fm_currency_'+currentUser.email,JSON.stringify(activeCurrency));
+  if(currentUser)await DB.saveCurrency(currentUser.uid,activeCurrency);
   document.getElementById('header-currency-sym').textContent=activeCurrency.code;
   document.getElementById('setup-cur-tag').textContent=activeCurrency.symbol||activeCurrency.code;
   document.querySelectorAll('.cur-label').forEach(el=>el.textContent=activeCurrency.symbol||activeCurrency.code);
   closeCurrencyModal();
   refreshAll();
-}
-function loadUserCurrency(){
-  if(!currentUser)return;
-  const saved=localStorage.getItem('fm_currency_'+currentUser.email);
-  if(saved){
-    activeCurrency=JSON.parse(saved);
-    document.getElementById('header-currency-sym').textContent=activeCurrency.code;
-    document.getElementById('setup-cur-tag').textContent=activeCurrency.symbol||activeCurrency.code;
-    document.querySelectorAll('.cur-label').forEach(el=>el.textContent=activeCurrency.symbol||activeCurrency.code);
-  }
 }
 
 // ══════════════════════════════════════════════
@@ -122,13 +112,13 @@ function openIncomeSetup(isEdit){
 
 function openEditIncome(){openIncomeSetup(true);}
 
-function saveIncome(){
+async function saveIncome(){
   const val=parseFloat(document.getElementById('setup-income-val').value);
   if(!val||val<=0){document.getElementById('setup-err').textContent='Please enter a valid income amount.';return;}
   const profile=getProfile();
   profile.income=val;
   profile.incomeSource=selectedSource||profile.incomeSource||'';
-  saveProfile(profile);
+  await saveProfile(profile);
   document.getElementById('income-setup').classList.remove('open');
   refreshAll();
 }
@@ -139,30 +129,136 @@ function skipIncome(){
 }
 
 // ══════════════════════════════════════════════
-// DATABASE
+// FIREBASE INITIALIZATION
 // ══════════════════════════════════════════════
-const DB={
-  users(){return JSON.parse(localStorage.getItem('fm_users')||'{}');},
-  saveUsers(u){localStorage.setItem('fm_users',JSON.stringify(u));},
-  txns(uid){return JSON.parse(localStorage.getItem('fm_txns_'+uid)||'[]');},
-  saveTxns(uid,t){localStorage.setItem('fm_txns_'+uid,JSON.stringify(t));},
-  budgets(uid){return JSON.parse(localStorage.getItem('fm_budgets_'+uid)||'{}');},
-  saveBudgets(uid,b){localStorage.setItem('fm_budgets_'+uid,JSON.stringify(b));},
-  profile(uid){return JSON.parse(localStorage.getItem('fm_profile_'+uid)||'{}');},
-  saveProfile(uid,p){localStorage.setItem('fm_profile_'+uid,JSON.stringify(p));},
-  session(){return JSON.parse(localStorage.getItem('fm_session')||'null');},
-  saveSession(s){localStorage.setItem('fm_session',JSON.stringify(s));},
-  clearSession(){localStorage.removeItem('fm_session');}
-};
-
+let firebaseApp, firebaseAuth, firebaseDB;
 let currentUser=null;
 let txnFilter='all';
+let userDataCache={txns:[],budgets:{},profile:{}};
 
-function getProfile(){return DB.profile(currentUser.email);}
-function saveProfile(p){DB.saveProfile(currentUser.email,p);}
+// Initialize Firebase
+function initFirebase(){
+  try{
+    firebaseApp=firebase.initializeApp(firebaseConfig);
+    firebaseAuth=firebase.auth();
+    firebaseDB=firebase.database();
+    console.log('✅ Firebase initialized successfully');
+    
+    // Listen for auth state changes
+    firebaseAuth.onAuthStateChanged(user=>{
+      if(user){
+        currentUser={email:user.email,name:user.displayName||user.email,uid:user.uid};
+        document.getElementById('auth-screen').style.display='none';
+        document.getElementById('app').style.display='flex';
+        document.getElementById('user-display').textContent=currentUser.name.split(' ')[0];
+        document.getElementById('user-avatar').textContent=currentUser.name.charAt(0).toUpperCase();
+        document.getElementById('dash-greeting').textContent='Welcome back, '+currentUser.name.split(' ')[0]+'!';
+        loadUserData();
+      }else{
+        currentUser=null;
+        document.getElementById('app').style.display='none';
+        document.getElementById('auth-screen').style.display='flex';
+      }
+    });
+  }catch(e){
+    console.error('❌ Firebase initialization failed:',e);
+    alert('Firebase setup required. Please configure firebase-config.js with your project credentials.');
+  }
+}
 
 // ══════════════════════════════════════════════
-// AUTH
+// DATABASE OPERATIONS (Firebase)
+// ══════════════════════════════════════════════
+const DB={
+  // Transactions
+  async txns(uid){
+    if(!uid)return[];
+    const snapshot=await firebaseDB.ref('users/'+uid+'/transactions').once('value');
+    return snapshot.val()||[];
+  },
+  async saveTxns(uid,txns){
+    if(!uid)return;
+    await firebaseDB.ref('users/'+uid+'/transactions').set(txns);
+    userDataCache.txns=txns;
+  },
+  
+  // Budgets
+  async budgets(uid){
+    if(!uid)return{};
+    const snapshot=await firebaseDB.ref('users/'+uid+'/budgets').once('value');
+    return snapshot.val()||{};
+  },
+  async saveBudgets(uid,budgets){
+    if(!uid)return;
+    await firebaseDB.ref('users/'+uid+'/budgets').set(budgets);
+    userDataCache.budgets=budgets;
+  },
+  
+  // Profile
+  async profile(uid){
+    if(!uid)return{};
+    const snapshot=await firebaseDB.ref('users/'+uid+'/profile').once('value');
+    return snapshot.val()||{};
+  },
+  async saveProfile(uid,profile){
+    if(!uid)return;
+    await firebaseDB.ref('users/'+uid+'/profile').set(profile);
+    userDataCache.profile=profile;
+  },
+  
+  // Currency preference
+  async getCurrency(uid){
+    if(!uid)return null;
+    const snapshot=await firebaseDB.ref('users/'+uid+'/currency').once('value');
+    return snapshot.val();
+  },
+  async saveCurrency(uid,currency){
+    if(!uid)return;
+    await firebaseDB.ref('users/'+uid+'/currency').set(currency);
+  }
+};
+
+// Load all user data from Firebase
+async function loadUserData(){
+  if(!currentUser)return;
+  try{
+    // Load data in parallel
+    const[txns,budgets,profile,currency]=await Promise.all([
+      DB.txns(currentUser.uid),
+      DB.budgets(currentUser.uid),
+      DB.profile(currentUser.uid),
+      DB.getCurrency(currentUser.uid)
+    ]);
+    
+    userDataCache={txns,budgets,profile};
+    
+    // Load currency
+    if(currency){
+      activeCurrency=currency;
+      document.getElementById('header-currency-sym').textContent=activeCurrency.code;
+      document.getElementById('setup-cur-tag').textContent=activeCurrency.symbol||activeCurrency.code;
+      document.querySelectorAll('.cur-label').forEach(el=>el.textContent=activeCurrency.symbol||activeCurrency.code);
+    }
+    
+    // Check if income setup needed
+    if(!profile.income){
+      openIncomeSetup(false);
+    }else{
+      refreshAll();
+    }
+  }catch(e){
+    console.error('Error loading user data:',e);
+  }
+}
+
+function getProfile(){return userDataCache.profile;}
+async function saveProfile(p){
+  userDataCache.profile=p;
+  await DB.saveProfile(currentUser.uid,p);
+}
+
+// ══════════════════════════════════════════════
+// AUTH (Firebase Authentication)
 // ══════════════════════════════════════════════
 function switchTab(tab){
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(tab==='login'&&i===0)||(tab==='register'&&i===1)));
@@ -170,67 +266,74 @@ function switchTab(tab){
   document.getElementById('register-form').style.display=tab==='register'?'block':'none';
   document.getElementById('auth-msg').textContent='';
 }
-function doLogin(){
+
+async function doLogin(){
   const email=document.getElementById('login-email').value.trim().toLowerCase();
   const pass=document.getElementById('login-pass').value;
-  const users=DB.users();
   if(!email||!pass)return showMsg('Please fill all fields.');
-  if(!users[email])return showMsg('Account not found. Please register.');
-  if(users[email].password!==btoa(pass))return showMsg('Incorrect password.');
-  loginUser(email,users[email],false);
+  
+  try{
+    showMsg('Signing in...');
+    await firebaseAuth.signInWithEmailAndPassword(email,pass);
+    // onAuthStateChanged will handle the rest
+  }catch(e){
+    console.error('Login error:',e);
+    if(e.code==='auth/user-not-found')showMsg('Account not found. Please register.');
+    else if(e.code==='auth/wrong-password')showMsg('Incorrect password.');
+    else if(e.code==='auth/invalid-email')showMsg('Invalid email address.');
+    else showMsg('Login failed: '+e.message);
+  }
 }
-function doRegister(){
+
+async function doRegister(){
   const name=document.getElementById('reg-name').value.trim();
   const email=document.getElementById('reg-email').value.trim().toLowerCase();
   const pass=document.getElementById('reg-pass').value;
+  
   if(!name||!email||!pass)return showMsg('Please fill all fields.');
   if(pass.length<6)return showMsg('Password must be at least 6 characters.');
-  const users=DB.users();
-  if(users[email])return showMsg('Account already exists. Please sign in.');
-  users[email]={name,email,password:btoa(pass),created:Date.now()};
-  DB.saveUsers(users);
-  loginUser(email,users[email],true);
-}
-function loginUser(email,data,isNew){
-  currentUser={email,name:data.name};
-  DB.saveSession(currentUser);
-  document.getElementById('auth-screen').style.display='none';
-  document.getElementById('app').style.display='flex';
-  document.getElementById('user-display').textContent=data.name.split(' ')[0];
-  document.getElementById('user-avatar').textContent=data.name.charAt(0).toUpperCase();
-  document.getElementById('dash-greeting').textContent='Welcome back, '+data.name.split(' ')[0]+'!';
-  loadUserCurrency();
-  const profile=getProfile();
-  // Show income setup for new users OR returning users who never set income
-  if(isNew||!profile.income){
-    openIncomeSetup(false);
-  } else {
-    refreshAll();
+  
+  try{
+    showMsg('Creating account...');
+    const userCredential=await firebaseAuth.createUserWithEmailAndPassword(email,pass);
+    
+    // Update profile with display name
+    await userCredential.user.updateProfile({displayName:name});
+    
+    // Save initial profile data
+    await firebaseDB.ref('users/'+userCredential.user.uid+'/profile').set({
+      name:name,
+      email:email,
+      created:Date.now()
+    });
+    
+    showMsg('Account created! Redirecting...');
+    // onAuthStateChanged will handle the rest
+  }catch(e){
+    console.error('Registration error:',e);
+    if(e.code==='auth/email-already-in-use')showMsg('Account already exists. Please sign in.');
+    else if(e.code==='auth/invalid-email')showMsg('Invalid email address.');
+    else if(e.code==='auth/weak-password')showMsg('Password is too weak.');
+    else showMsg('Registration failed: '+e.message);
   }
 }
-function doLogout(){
-  DB.clearSession();currentUser=null;
-  document.getElementById('app').style.display='none';
-  document.getElementById('auth-screen').style.display='flex';
-  document.getElementById('login-email').value='';
-  document.getElementById('login-pass').value='';
+
+async function doLogout(){
+  try{
+    await firebaseAuth.signOut();
+    userDataCache={txns:[],budgets:{},profile:{}};
+    document.getElementById('login-email').value='';
+    document.getElementById('login-pass').value='';
+  }catch(e){
+    console.error('Logout error:',e);
+  }
 }
+
 function showMsg(m){document.getElementById('auth-msg').textContent=m;}
+
+// Initialize on page load
 window.onload=()=>{
-  // Auto-login with demo user
-  const demoUser = {email: 'demo@finmind.app', name: 'Demo User'};
-  currentUser = demoUser;
-  document.getElementById('app').style.display='flex';
-  document.getElementById('user-display').textContent=demoUser.name.split(' ')[0];
-  document.getElementById('user-avatar').textContent=demoUser.name.charAt(0).toUpperCase();
-  document.getElementById('dash-greeting').textContent='Welcome back, '+demoUser.name.split(' ')[0]+'!';
-  loadUserCurrency();
-  const profile=getProfile();
-  if(!profile.income){
-    openIncomeSetup(false);
-  } else {
-    refreshAll();
-  }
+  initFirebase();
 };
 
 // ══════════════════════════════════════════════
@@ -250,33 +353,38 @@ function showPage(id,btn){
 // ══════════════════════════════════════════════
 // TRANSACTIONS
 // ══════════════════════════════════════════════
-function addTransaction(){
+async function addTransaction(){
   const desc=document.getElementById('txn-desc').value.trim();
   const amt=parseFloat(document.getElementById('txn-amount').value);
   const cat=document.getElementById('txn-cat').value;
   const type=document.getElementById('txn-type').value;
   if(!desc||isNaN(amt)||amt<=0){alert('Please enter a valid description and amount.');return;}
-  const txns=DB.txns(currentUser.email);
+  
+  const txns=userDataCache.txns||[];
   txns.unshift({id:Date.now(),desc,amt,cat,type,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})});
-  DB.saveTxns(currentUser.email,txns);
+  await DB.saveTxns(currentUser.uid,txns);
+  
   document.getElementById('txn-desc').value='';
   document.getElementById('txn-amount').value='';
   renderTxnTable();renderDashboard();
 }
-function deleteTxn(id){
-  DB.saveTxns(currentUser.email,DB.txns(currentUser.email).filter(t=>t.id!==id));
+
+async function deleteTxn(id){
+  const txns=userDataCache.txns.filter(t=>t.id!==id);
+  await DB.saveTxns(currentUser.uid,txns);
   renderTxnTable();renderDashboard();
 }
 function filterTxns(f,el){
   txnFilter=f;
   document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');renderTxnTable();
+  el.classList.add('active');
+  renderTxnTable();
 }
 const catEmoji={Salary:'💰',Freelance:'💻',Investment:'📈',Food:'🍔',Transport:'🚗',Housing:'🏠',Health:'💊',Entertainment:'🎬',Shopping:'🛍',Education:'📚',Utilities:'⚡',Other:'📦'};
 const catColor={Food:'#f97066',Transport:'#7eb8f7',Housing:'#fbbf24',Health:'#86efac',Entertainment:'#c084fc',Shopping:'#fb923c',Education:'#34d399',Utilities:'#60a5fa',Salary:'#b8f59a',Freelance:'#a78bfa',Investment:'#34d399',Other:'#9ca3af'};
 
 function renderTxnTable(){
-  let txns=DB.txns(currentUser.email);
+  let txns=userDataCache.txns||[];
   if(txnFilter!=='all')txns=txns.filter(t=>t.type===txnFilter);
   const tbody=document.getElementById('txn-tbody');
   if(!txns.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:32px">No transactions found</td></tr>';return;}
@@ -297,7 +405,7 @@ function renderTxnTable(){
 function refreshAll(){renderDashboard();renderTxnTable();renderBudget();renderAISummary();}
 
 function getStats(){
-  const txns=DB.txns(currentUser.email);
+  const txns=userDataCache.txns||[];
   const profile=getProfile();
   const monthlyIncome=profile.income||0;
   const extraIncome=txns.filter(t=>t.type==='income').reduce((s,t)=>s+t.amt,0);
@@ -369,18 +477,21 @@ function renderDashboard(){
 // ══════════════════════════════════════════════
 // BUDGET
 // ══════════════════════════════════════════════
-function setBudget(){
+async function setBudget(){
   const cat=document.getElementById('budget-cat').value;
   const limit=parseFloat(document.getElementById('budget-limit').value);
   if(!limit||limit<=0){alert('Enter a valid limit.');return;}
-  const budgets=DB.budgets(currentUser.email);
+  
+  const budgets=userDataCache.budgets||{};
   budgets[cat]=limit;
-  DB.saveBudgets(currentUser.email,budgets);
+  await DB.saveBudgets(currentUser.uid,budgets);
+  
   document.getElementById('budget-limit').value='';
   renderBudget();
 }
+
 function renderBudget(){
-  const budgets=DB.budgets(currentUser.email);
+  const budgets=userDataCache.budgets||{};
   const{byCat,monthlyIncome}=getStats();
   const grid=document.getElementById('budget-grid');
   if(!Object.keys(budgets).length){grid.innerHTML='<div style="color:var(--text3);font-size:13px;grid-column:1/-1">No budgets set yet. Add one above.</div>';return;}
@@ -415,8 +526,8 @@ function renderAISummary(){
 
 function buildFinancialContext(){
   const{monthlyIncome,totalIncome,expense,balance,remaining,savingsRate,byCat,profile}=getStats();
-  const budgets=DB.budgets(currentUser.email);
-  const txns=DB.txns(currentUser.email);
+  const budgets=userDataCache.budgets||{};
+  const txns=userDataCache.txns||[];
   
   // Top expenses with details
   const topExpenses=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([c,a])=>`${c}: ${fmt(a)}${monthlyIncome>0?' ('+Math.round(a/monthlyIncome*100)+'% of income)':''}`).join(', ');

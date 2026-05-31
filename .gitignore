@@ -6,6 +6,16 @@
 config.js
 secrets.js
 
+# Firebase config with real credentials
+# Uncomment the line below if you want to keep credentials private:
+# firebase-config.js
+
+# Firebase
+.firebase/
+.firebaserc
+firebase-debug.log
+firebase-debug.*.log
+
 # Node modules (if you add a backend later)
 node_modules/
 
